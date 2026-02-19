@@ -194,7 +194,8 @@
 
     <script>
         const API_URL = 'https://api.open-meteo.com/v1/forecast';
-        const FALLBACK_COORDS = { lat: 52.2297, lon: 21.0122, name: 'Warszawa' };
+        const GEO_URL = 'https://api.bigdatacloud.net/data/reverse-geocode-client';
+        const FALLBACK_COORDS = { lat: 52.2297, lon: 21.0122, name: 'Warszawa, Polska' };
 
         const WEATHER_MAP = {
             0: { icon: '☀️', desc: 'Czyste niebo' },
@@ -235,11 +236,30 @@
                 }
 
                 navigator.geolocation.getCurrentPosition(
-                    (pos) => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude, name: 'Twoja lokalizacja' }),
+                    async (pos) => {
+                        const coords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+                        const name = await fetchLocationName(coords.lat, coords.lon);
+                        resolve({ ...coords, name });
+                    },
                     () => resolve(FALLBACK_COORDS),
                     { timeout: 5000 }
                 );
             });
+        }
+
+        async function fetchLocationName(lat, lon) {
+            try {
+                const url = `${GEO_URL}?latitude=${lat}&longitude=${lon}&localityLanguage=pl`;
+                const response = await fetch(url);
+                if (!response.ok) return 'Twoja lokalizacja';
+                const data = await response.json();
+                if (data.city && data.countryName) {
+                    return `${data.city}, ${data.countryName}`;
+                }
+                return data.locality || 'Twoja lokalizacja';
+            } catch {
+                return 'Twoja lokalizacja';
+            }
         }
 
         async function fetchWeather(lat, lon) {
