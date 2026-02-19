@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Page</title>
+    <style>
+        :root {
+            --color-primary: #2563eb;
+            --color-primary-light: #3b82f6;
+            --color-bg: #ffffff;
+            --color-bg-secondary: #f8fafc;
+            --color-text: #1e293b;
+            --color-text-secondary: #64748b;
+            --space-4: 1rem;
+            --space-8: 2rem;
+            --radius-lg: 1rem;
+            --font-family: system-ui, -apple-system, sans-serif;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --color-bg: #0f172a;
+                --color-bg-secondary: #1e293b;
+                --color-text: #f1f5f9;
+                --color-text-secondary: #94a3b8;
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--color-bg);
+            color: var(--color-text);
+            line-height: 1.5;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        header {
+            padding: var(--space-4);
+            text-align: center;
+            border-bottom: 1px solid var(--color-bg-secondary);
+        }
+
+        main {
+            flex: 1;
+            width: 100%;
+            max-width: 768px;
+            margin: 0 auto;
+            padding: var(--space-8) var(--space-4);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: var(--space-8);
+        }
+
+        .location-badge {
+            background: var(--color-bg-secondary);
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            font-size: 0.875rem;
+            color: var(--color-text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .weather-main {
+            text-align: center;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        .weather-icon {
+            font-size: 5rem;
+            margin-bottom: 1rem;
+        }
+
+        .temp-display {
+            font-size: 4rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .condition-text {
+            font-size: 1.5rem;
+            color: var(--color-text-secondary);
+            margin-bottom: 2rem;
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-4);
+            width: 100%;
+            max-width: 300px;
+        }
+
+        .detail-item {
+            background: var(--color-bg-secondary);
+            padding: 1rem;
+            border-radius: var(--radius-lg);
+            text-align: center;
+        }
+
+        .detail-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: var(--color-text-secondary);
+            margin-bottom: 0.25rem;
+        }
+
+        .hourly-section {
+            width: 100%;
+        }
+
+        .section-title {
+            font-size: 1.125rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--color-bg-secondary);
+        }
+
+        .hourly-scroll {
+            display: flex;
+            gap: 1rem;
+            overflow-x: auto;
+            padding-bottom: 1rem;
+            scrollbar-width: thin;
+        }
+
+        .hourly-card {
+            background: var(--color-bg-secondary);
+            padding: 1rem;
+            border-radius: var(--radius-lg);
+            min-width: 80px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        footer {
+            padding: var(--space-4);
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--color-text-secondary);
+        }
+
+        /* Loading Skeleton */
+        .skeleton {
+            background: linear-gradient(90deg, var(--color-bg-secondary) 25%, var(--color-bg) 50%, var(--color-bg-secondary) 75%);
+            background-size: 200% 100%;
+            animation: skeleton-loading 1.5s infinite;
+            border-radius: 0.5rem;
+        }
+
+        @keyframes skeleton-loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Weather Page</h1>
+    </header>
+
+    <main id="app">
+        <!-- Loader / Initial State -->
+        <div class="weather-main">
+            <div class="location-badge">📍 Wykrywanie lokalizacji...</div>
+            <div class="weather-icon">⏳</div>
+            <div class="temp-display">--°</div>
+            <p class="condition-text">Pobieranie danych...</p>
+        </div>
+    </main>
+
+    <footer>
+        <p>Dane: Open-Meteo (no-key) • Build by HANS</p>
+    </footer>
+
+    <script>
+        const API_URL = 'https://api.open-meteo.com/v1/forecast';
+        const FALLBACK_COORDS = { lat: 52.2297, lon: 21.0122, name: 'Warszawa' };
+
+        const WEATHER_MAP = {
+            0: { icon: '☀️', desc: 'Czyste niebo' },
+            1: { icon: '🌤️', desc: 'Głównie bezchmurnie' },
+            2: { icon: '⛅', desc: 'Częściowe zachmurzenie' },
+            3: { icon: '☁️', desc: 'Pochmurno' },
+            45: { icon: '🌫️', desc: 'Mgła' },
+            48: { icon: '🌫️', desc: 'Szadź' },
+            51: { icon: '🌦️', desc: 'Lekka mżawka' },
+            61: { icon: '🌧️', desc: 'Lekki deszcz' },
+            63: { icon: '🌧️', desc: 'Deszcz' },
+            71: { icon: '🌨️', desc: 'Lekki śnieg' },
+            95: { icon: '⛈️', desc: 'Burza' }
+        };
+
+        async function init() {
+            const app = document.getElementById('app');
+            
+            try {
+                const coords = await getCoordinates();
+                const data = await fetchWeather(coords.lat, coords.lon);
+                renderWeather(data, coords.name);
+            } catch (error) {
+                console.error(error);
+                app.innerHTML = `<div class="weather-main">
+                    <div class="weather-icon">⚠️</div>
+                    <p class="condition-text">Błąd podczas pobierania pogody.</p>
+                    <button onclick="location.reload()" style="padding: 0.5rem 1rem; border-radius: 0.5rem; border: 1px solid var(--color-primary); background: transparent; color: var(--color-primary); cursor: pointer;">Spróbuj ponownie</button>
+                </div>`;
+            }
+        }
+
+        function getCoordinates() {
+            return new Promise((resolve) => {
+                if (!navigator.geolocation) {
+                    resolve(FALLBACK_COORDS);
+                    return;
+                }
+
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude, name: 'Twoja lokalizacja' }),
+                    () => resolve(FALLBACK_COORDS),
+                    { timeout: 5000 }
+                );
+            });
+        }
+
+        async function fetchWeather(lat, lon) {
+            const url = `${API_URL}?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=temperature_2m,weathercode&forecast_days=1&timezone=auto`;
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('API Error');
+            return await response.json();
+        }
+
+        function renderWeather(data, locationName) {
+            const current = data.current_weather;
+            const weather = WEATHER_MAP[current.weathercode] || { icon: '🌡️', desc: 'Pogoda' };
+            
+            const app = document.getElementById('app');
+            
+            // Render Main Weather
+            app.innerHTML = `
+                <div class="weather-main">
+                    <div class="location-badge">📍 ${locationName}</div>
+                    <div class="weather-icon">${weather.icon}</div>
+                    <div class="temp-display">${Math.round(current.temperature)}°</div>
+                    <p class="condition-text">${weather.desc}</p>
+                    
+                    <div class="details-grid">
+                        <div class="detail-item">
+                            <div class="detail-label">Wiatr</div>
+                            <div>${current.windspeed} km/h</div>
+                        </div>
+                        <div class="detail-item">
+                            <div class="detail-label">Kierunek</div>
+                            <div>${current.winddirection}°</div>
+                        </div>
+                    </div>
+                </div>
+
+                <section class="hourly-section">
+                    <h2 class="section-title">Dzisiejsza prognoza</h2>
+                    <div class="hourly-scroll">
+                        ${renderHourly(data.hourly)}
+                    </div>
+                </section>
+            `;
+        }
+
+        function renderHourly(hourly) {
+            const now = new Date().getHours();
+            return hourly.time.map((time, index) => {
+                const date = new Date(time);
+                const hour = date.getHours();
+                
+                // Show only next 24 hours starting from current hour
+                if (index < now) return ''; 
+
+                const weather = WEATHER_MAP[hourly.weathercode[index]] || { icon: '🌡️' };
+                return `
+                    <div class="hourly-card">
+                        <div style="font-size: 0.75rem; color: var(--color-text-secondary)">${hour}:00</div>
+                        <div style="font-size: 1.5rem">${weather.icon}</div>
+                        <div style="font-weight: 600">${Math.round(hourly.temperature_2m[index])}°</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        init();
+    </script>
+</body>
+</html>

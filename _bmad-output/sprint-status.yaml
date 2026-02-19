@@ -1,0 +1,42 @@
+# Sprint Status Tracker
+project: Weather Page
+current_epic: 1
+last_updated: 2026-02-19
+
+epics:
+  1:
+    name: "Foundation"
+    status: in-progress
+    stories:
+      1-1-github-setup:
+        name: "Setup GitHub Pages"
+        status: ready-for-dev
+      1-2-html-structure:
+        name: "Create Base HTML Structure"
+        status: backlog
+      1-3-base-css:
+        name: "Implement Basic CSS"
+        status: backlog
+  2:
+    name: "Core Weather"
+    status: backlog
+    stories:
+      2-1-geolocation:
+        name: "Implement Geolocation"
+        status: backlog
+      2-2-fetch-data:
+        name: "Fetch Weather Data"
+        status: backlog
+      2-3-display-ui:
+        name: "Display Weather UI"
+        status: backlog
+  3:
+    name: "Enhancements"
+    status: backlog
+    stories:
+      3-1-hourly-forecast:
+        name: "Hourly Forecast"
+        status: backlog
+      3-2-error-loading:
+        name: "Error & Loading States"
+        status: backlog
